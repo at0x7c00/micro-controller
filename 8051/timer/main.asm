@@ -1,38 +1,42 @@
-;Delay(int ms);
+;Delay(unsigned int ms);
 ;参数ms:毫秒数,使用R0和R1保存
-;晶振频率:11.0592MHz
-
+		
+		ORG 0
+FORVER:
+		MOV R1,#0E8H
+		MOV R0,#3H
+		ACALL Delay
+		CPL P2.0
+		SJMP FORVER
 Delay:
-
-_Delay1:
+		;ms--
+		CLR C				;1
+		MOV A,R1			;1
+		SUBB A,#01H			;2
+		JNC NEXT 			;2
+		MOV R1,#0FFH		;2有借位，低位设置成FF
+NEXT:		
+		MOV R1,A			;1保存低位
 		
-
-HERE:	MOV TL0,#0FCH		;2
-		MOV TH0,#04CH		;2
+		MOV A,R0			;1
+		SUBB A,#00H			;2有借位，则高位减1
+		MOV R0,A			;1保存高位
 		
-		ACALL _Delay0		;2
-		SJMP  HERE			;2
-
-
-_Delay0:
+		CJNE R1,#0H,HERE	;3高位或者低位不为零，则执行定时器
+		CJNE R0,#0H,HERE	;3
+		
+		SJMP EXIT			;2 ms==0，退出循环，函数退出
+		
+HERE:	MOV TL0,#39H		;2
+		MOV TH0,#0FCH		;2
+		MOV TMOD,#01H		;2
+		
 		SETB TR0			;1  启动定时器
 AGAIN:	JNB TF0,AGAIN		;X+1监控溢出位
 		CLR TR0				;1  停止定时器
 		CLR TF0				;1  清空溢出位
+		
+		SJMP Delay			;2
+EXIT:
 		RET					;2
-
-;2+2+2+2+1+1+1+2 = 13
-;X + 1 + 13
-1ms = 1000us
-1.0403us
-1000us / 1.0403 = 961
-;即需要961次计数来表示1ms
-
-x  + 1 + 13 = 961
-所以x = 961 - 14
-      = 947
-	  = 03B3H
-FFFFH - 03B3H = FC4CH
-
-
-	  
+		END
